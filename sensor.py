@@ -28,6 +28,9 @@ import adafruit_ahtx0
 import adafruit_mprls
 import adafruit_scd4x
 import adafruit_sgp30
+import adafruit_tlv493d
+import adafruit_tsl2591
+
 
 #
 # This section has all of the functions specific to each supported sensor to read its data
@@ -163,6 +166,16 @@ def sensor_ads1115(sensor):
 
     return {"x": 0 }
 
+def sensor_tlv493d(sensor):
+
+    return {"Magnetometer": sensor.magnetic}
+
+def sensor_tsl2591(sensor):
+
+    return {"Lux": sensor.lux, "Infrared": sensor.infrared, "Visible": sensor.visible}
+
+
+
 #
 # Program starts here
 #
@@ -187,7 +200,9 @@ sensor_dict = {
     15: {'name': 'ADS1115 4-Channel ADC', 'short': 'ADS1115', 'func': sensor_ads1115, 'class_ref': ADS_1115.ADS1115, 'i2c_addr': 0x48, 'chip_id': 0x00, 'chip_value': 0x00},
     16: {'name': 'LSM303 Accelerometer + Compass', 'short': 'LSM303', 'func': sensor_lsm303, 'class_ref': adafruit_lsm303_accel.LSM303_Accel, 'i2c_addr': 0x48, 'chip_id': 0x0f, 'chip_value': 0x33}, # and 2 different magnetometers
     17: {'name': 'AHT20 Temperature & Humidity', 'short': 'AHT20', 'func': sensor_aht20, 'class_ref': adafruit_ahtx0.AHTx0, 'i2c_addr': 0x38, 'chip_id': 0x00, 'chip_value': 0x00},
-    18: {'name': 'MPRLS Ported Pressure', 'short': 'MPRLS', 'func': sensor_mprls, 'class_ref': adafruit_mprls.MPRLS, 'i2c_addr': 0x18, 'chip_id': 0x00, 'chip_value': 0x00}
+    18: {'name': 'MPRLS Ported Pressure', 'short': 'MPRLS', 'func': sensor_mprls, 'class_ref': adafruit_mprls.MPRLS, 'i2c_addr': 0x18, 'chip_id': 0x00, 'chip_value': 0x00},
+    19: {'name': 'TLV493D Triple-Axis Magnetometer', 'short': 'TLV493D', 'func': sensor_tlv493d, 'class_ref': adafruit_tlv493d.TLV493D, 'i2c_addr': 0x5E, 'chip_id': 0x00, 'chip_value': 0x00},
+    20: {'name': 'TSL2591 High Dynamic Range Digital Light Sensor', 'short': 'TSL2591', 'func': sensor_tsl2591, 'class_ref': adafruit_tsl2591.TSL2591, 'i2c_addr': 0x29, 'chip_id': 0x00, 'chip_value': 0x00}
 }
 # List of all sensors in same order as dict, with None for sensors not found
 sensor_list = []
