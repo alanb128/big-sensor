@@ -19,12 +19,18 @@ RUN pip3 install Adafruit-Blinka adafruit-circuitpython-pm25 \
     adafruit-circuitpython-lsm303-accel \
     adafruit-circuitpython-lis2mdl \
     adafruit-circuitpython-lsm303dlh-mag \
+    adafruit-circuitpython-tlv493d \
+    adafruit-circuitpython-tsl2591 \
     RPi.GPIO paho-mqtt requests
     
-#COPY *.py ./
+COPY *.py ./
 
 # Enable udevd so that plugged dynamic hardware devices show up in our container.
 ENV UDEV=1
 
+#
+# basic command
+# CMD ["python3", "sensor.py"]
+#
 # sleeping for dev work
-CMD ["sleep", "infinity"]
+CMD ["sleep", "infinity"] 
