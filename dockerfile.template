@@ -21,7 +21,7 @@ RUN pip3 install Adafruit-Blinka adafruit-circuitpython-pm25 \
     adafruit-circuitpython-lsm303dlh-mag \
     RPi.GPIO paho-mqtt requests
     
-#COPY *.py ./
+COPY *.py ./
 
 # Enable udevd so that plugged dynamic hardware devices show up in our container.
 ENV UDEV=1
