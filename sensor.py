@@ -219,8 +219,9 @@ for sensor_id, sensor_info in sensor_dict.items():
 i = 0
 #print(sensor_list)
 #print(sensor_dict)
+print(" ")
 for sensor in sensor_list:
     #print(sensor)
     if sensor is not None:
-        print(sensor_dict[i]['func'](sensor))
+        print("{0}: {1}".format(sensor_dict[i]['short'], sensor_dict[i]['func'](sensor)))
     i = i + 1
