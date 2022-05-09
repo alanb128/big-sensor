@@ -30,6 +30,13 @@ import adafruit_scd4x
 import adafruit_sgp30
 import adafruit_tlv493d
 import adafruit_tsl2591
+import adafruit_as7341
+import adafruit_vcnl4040
+import adafruit_ina219
+import adafruit_adxl34x
+
+
+
 
 
 #
@@ -174,7 +181,21 @@ def sensor_tsl2591(sensor):
 
     return {"Lux": sensor.lux, "Infrared": sensor.infrared, "Visible": sensor.visible}
 
+def sensor_as7341(sensor):
 
+    return {"415nm": sensor.channel_415nm, "445nm": sensor.channel_445nm, "480nm": sensor.channel_480nm, "515nm": sensor.channel_515nm, "555nm": sensor.channel_555nm, "590nm": sensor.channel_590nm, "630nm": sensor.channel_630nm, "680nm": sensor.channel_680nm}
+
+def sensor_vcnl4040(sensor):
+
+    return {"Lux": sensor.lux, "Proximity": sensor.proximity}
+
+def sensor_ina219(sensor):
+
+    return {"Shunt Current": (sensor.current / 1000), "Power": sensor.power}
+
+def sensor_adxl343(sensor):
+
+    return {"Acceleration": sensor.acceleration}
 
 #
 # Program starts here
@@ -202,7 +223,12 @@ sensor_dict = {
     17: {'name': 'AHT20 Temperature & Humidity', 'short': 'AHT20', 'func': sensor_aht20, 'class_ref': adafruit_ahtx0.AHTx0, 'i2c_addr': 0x38, 'chip_id': 0x00, 'chip_value': 0x00},
     18: {'name': 'MPRLS Ported Pressure', 'short': 'MPRLS', 'func': sensor_mprls, 'class_ref': adafruit_mprls.MPRLS, 'i2c_addr': 0x18, 'chip_id': 0x00, 'chip_value': 0x00},
     19: {'name': 'TLV493D Triple-Axis Magnetometer', 'short': 'TLV493D', 'func': sensor_tlv493d, 'class_ref': adafruit_tlv493d.TLV493D, 'i2c_addr': 0x5E, 'chip_id': 0x00, 'chip_value': 0x00},
-    20: {'name': 'TSL2591 High Dynamic Range Digital Light Sensor', 'short': 'TSL2591', 'func': sensor_tsl2591, 'class_ref': adafruit_tsl2591.TSL2591, 'i2c_addr': 0x29, 'chip_id': 0x00, 'chip_value': 0x00}
+    20: {'name': 'TSL2591 High Dynamic Range Digital Light Sensor', 'short': 'TSL2591', 'func': sensor_tsl2591, 'class_ref': adafruit_tsl2591.TSL2591, 'i2c_addr': 0x29, 'chip_id': 0x00, 'chip_value': 0x00},
+    21: {'name': 'AS7341 10-Channel Light / Color Sensor', 'short': 'AS7341', 'func': sensor_as7341, 'class_ref': adafruit_as7341.AS7341, 'i2c_addr': 0x39, 'chip_id': 0x00, 'chip_value': 0x00},
+    22: {'name': 'VCNL4040 Proximity Sensor', 'short': 'VCNL4040', 'func': sensor_vcnl4040, 'class_ref': adafruit_vcnl4040.VCNL4040, 'i2c_addr': 0x60, 'chip_id': 0x00, 'chip_value': 0x00},
+    23: {'name': 'INA219 Current Sensor', 'short': 'INA219', 'func': sensor_ina219, 'class_ref': adafruit_ina219.INA219, 'i2c_addr': 0x40, 'chip_id': 0x00, 'chip_value': 0x00},
+    24: {'name': 'ADXL343 Digital MEMS Accelerometer', 'short': 'ADXL343', 'func': sensor_adxl343, 'class_ref': adafruit_adxl34x.ADXL343, 'i2c_addr': 0x53, 'chip_id': 0x00, 'chip_value': 0x00}
+ 
 }
 # List of all sensors in same order as dict, with None for sensors not found
 sensor_list = []

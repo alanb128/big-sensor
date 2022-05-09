@@ -1,4 +1,4 @@
-FROM balenalib/%%BALENA_MACHINE_NAME%%-ubuntu-python:3.8-bionic-build
+FROM balenalib/armv7hf-ubuntu-python:3.8-bionic-build
 
 # Set our working directory
 WORKDIR /usr/src/app
@@ -25,7 +25,7 @@ RUN pip3 install Adafruit-Blinka adafruit-circuitpython-pm25 \
     adafruit-circuitpython-vcnl4040 \
     adafruit-circuitpython-ina219 \
     adafruit-circuitpython-adxl34x \
-    RPi.GPIO paho-mqtt requests
+    RPi.GPIO paho-mqtt requests smbus
     
 COPY *.py ./
 
