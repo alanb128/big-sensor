@@ -30,7 +30,15 @@ import adafruit_scd4x
 import adafruit_sgp30
 import adafruit_tlv493d
 import adafruit_tsl2591
-
+from http.server import HTTPServer, BaseHTTPRequestHandler
+import paho.mqtt.client as mqtt
+import socket
+import threading
+import requests
+from smbus2 import SMBus
+import os
+import datetime
+import json
 
 #
 # This section has all of the functions specific to each supported sensor to read its data
@@ -176,10 +184,130 @@ def sensor_tsl2591(sensor):
 
 
 
-#
-# Program starts here
-#
+def mqtt_detect():
+    
+    # Use the supervisor api to get services
+    # See https://www.balena.io/docs/reference/supervisor/supervisor-api/
+    
+    address = os.getenv('BALENA_SUPERVISOR_ADDRESS', '')
+    api_key = os.getenv('BALENA_SUPERVISOR_API_KEY', '')
+    app_name = os.getenv('BALENA_APP_NAME', '')
 
+    url = "{0}/v2/applications/state?apikey={1}".format(address, api_key)
+
+    try:
+        r = requests.get(url).json()
+    except Exception as e:
+        print("Error looking for MQTT service: {0}".format(str(e)))
+        return False
+    else:
+        services = r[app_name]['services'].keys()
+
+        if "mqtt" in services:
+            return True
+        else:
+            return False
+ 
+ 
+# Simple webserver:
+
+def background_web(server_socket):
+    while True:
+        # Wait for client connections
+        client_connection, client_address = server_socket.accept()
+
+        # Get the client request
+        request = client_connection.recv(1024).decode()
+        print(request)
+
+        # Send HTTP response
+        response = 'HTTP/1.0 200 OK\n\n' + json.dumps(get_reading())
+        client_connection.sendall(response.encode())
+        client_connection.close()
+
+
+def read_chip_id(bus, device, loc):
+    #print("{0} - {1} - {2}".format(bus, device, loc))
+    chip_id = -1
+    time.sleep(0.2)
+    try:
+        chip_id = bus.read_byte_data(device, loc)
+    except Exception as e:
+        # Likely because device isn't present, a remote i/o error, which in this case we can ignore
+        pass
+
+    return chip_id
+
+def get_reading():
+    i = 0
+    return_dict = {}
+    for sensor in sensor_list:
+    #print(sensor)
+        if sensor is not None:
+            return_dict[sensor_dict[i]['short']] = sensor_dict[i]['func'](sensor)
+        #print("{0}: {1}".format(sensor_dict[i]['short'], sensor_dict[i]['func'](sensor)))
+        i = i + 1
+
+    return return_dict
+
+###############################
+# Program starts here
+###############################
+
+mqtt_address = os.getenv('MQTT_ADDRESS', 'none')
+use_httpserver = os.getenv('ALWAYS_USE_HTTPSERVER', 0)
+try:
+    interval = os.getenv('MQTT_PUB_INTERVAL', '8')
+except Exception as e:
+    print("Error converting MQTT_PUB_INTERVAL: Must be integer or float! Using default.")
+    interval = 8
+publish_topic = os.getenv('MQTT_PUB_TOPIC', 'sensors')
+try:
+    bus_number = int(os.getenv('BUS_NUMBER', '1'))  # default 1 indicates /dev/i2c-1
+except Exception as e:
+    print("Error in BUS_NUMBER: Must be integer! Using default /dev/i2c-1.")
+    bus_number = 1
+bus = SMBus(bus_number)
+time.sleep(1)  # wait here to avoid 121 IO Error 
+
+if use_httpserver == "1":
+    enable_httpserver = "True"
+else:
+    enable_httpserver = "False"
+
+if mqtt_detect() and mqtt_address == "none":
+        mqtt_address = "mqtt"
+
+if mqtt_address != "none":
+    print("Starting mqtt client, publishing to {0}:1883".format(mqtt_address))
+    print("Using MQTT publish interval: {0} sec(s)".format(interval))
+    client = mqtt.Client()
+    try:
+        client.connect(mqtt_address, 1883, 60)
+    except Exception as e:
+        print("Error connecting to mqtt. ({0})".format(str(e)))
+        mqtt_address = "none"
+        enable_httpserver = "True"
+    else:
+        client.loop_start()
+else:
+    enable_httpserver = "True"
+
+if enable_httpserver == "True":
+    SERVER_HOST = '0.0.0.0'
+    SERVER_PORT = 7575
+
+    # Create socket
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    server_socket.bind((SERVER_HOST, SERVER_PORT))
+    server_socket.listen(1)
+    print("HTTP server listening on port {0}...".format(SERVER_PORT))
+
+    t = threading.Thread(target=background_web, args=(server_socket,))
+    t.start()
+
+            
 # Dictionary of all information about a supported sensor
 sensor_dict = {
     0: {'name': 'LIS3DH Triple-Axis Accelerometer', 'short': 'LIS3DH', 'func': sensor_lis3dh, 'class_ref': adafruit_lis3dh.LIS3DH_I2C, 'i2c_addr': 0x18, 'chip_id': 0x0f, 'chip_value': 0x33},
@@ -213,30 +341,67 @@ i = 0
 # See which sensors we have attached and update 'found' value in dict
 for sensor_id, sensor_info in sensor_dict.items():
 
-    try:
-        test_sensor = sensor_info['class_ref'](i2c)
-    except Exception as e:
-        print("{} not found.".format(sensor_info['short']))
-        sensor_list.append(None)
-    else:
-        print("Found a {} sensor!".format(sensor_info['name']))
-
+    skip_sensor = False
+    
+    # If we already found a sensor at this address, don't try finding another at the same address
+    # This means that the sensors earlier in the dict have priority...
+    # Also better to have ones with a chip ID earlier in dict
+    j = 0
+    for sensor in sensor_list:
+        if sensor is not None:
+            test_i2c =  sensor_dict[j]['i2c_addr']
+            if test_i2c == sensor_info['i2c_addr']:
+                skip_sensor = True
+                print("Skipping sensor {} because the i2c address is already in use by another sensor.".format(sensor_info['short']))
+        j = j + 1 
+        
+    # Next read the chip_id if the sensor supports it...
+    if not skip_sensor:
+        if sensor_info['chip_id'] != 0x00:
+            read_chip = read_chip_id(bus, sensor_info['i2c_addr'], sensor_info['chip_id'])
+            if read_chip != sensor_info['chip_value'] and read_chip != -1:
+                skip_sensor = True
+                print("Skipping sensor {0} because chip ID {1} does not match.".format(sensor_info['short'], hex(sensor_info['chip_id'])))
+            
+                
+    if not skip_sensor:           
         try:
-            test_sensor
-        except NameError:
-            test_sensor = None
-        #else:
-        #    sensor_info['found'] = True
-        sensor_list.append(test_sensor)
+            test_sensor = sensor_info['class_ref'](i2c)
+        except Exception as e:
+            print("{} not found.".format(sensor_info['short']))
+            sensor_list.append(None)  # keep list in sync with dict
+        else:
+            print("Found a {} sensor!".format(sensor_info['name']))
+
+            try:
+                test_sensor
+            except NameError:
+                test_sensor = None
+            #else:
+            #    sensor_info['found'] = True
+            sensor_list.append(test_sensor)
+    else:
+        sensor_list.append(None)  # keep list in sync with dict
+
     i = i + 1
 
 # Loop through sensors and print values of attached ones using their specific function
 i = 0
-#print(sensor_list)
-#print(sensor_dict)
+#print("Sensor list: {}".format(sensor_list))
+#print("Sensor dict: {}".format(sensor_dict))
 print(" ")
-for sensor in sensor_list:
-    #print(sensor)
-    if sensor is not None:
-        print("{0}: {1}".format(sensor_dict[i]['short'], sensor_dict[i]['func'](sensor)))
-    i = i + 1
+#for sensor in sensor_list:
+#    #print(sensor)
+#    if sensor is not None:
+#        print("{0}: {1}".format(sensor_dict[i]['short'], sensor_dict[i]['func'](sensor)))
+#    i = i + 1
+while True:
+    if mqtt_address == "none":
+        print("{}:".format(datetime.datetime.now()))
+        print(get_reading())
+        print("------------------------------")
+        time.sleep(10)
+    else:
+        client.publish(publish_topic, json.dumps(get_reading()))
+        print("Published MQTT.")
+        time.sleep(interval)
