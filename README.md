@@ -1,7 +1,7 @@
 # big-sensor
 Instantly read data from 20 popular Adafruit I2C sensors without any configuration.
 
-This is a work in progress, based off the lighter-weight balena [Sensor block](https://github.com/balenablocks/sensor) which has similar functionality
+This is a work in progress, based off the lighter-weight balena [Sensor block](https://github.com/balenablocks/sensor) which has similar functionality but supports fewer sensors.
 
 ## Use
 
