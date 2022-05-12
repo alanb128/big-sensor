@@ -25,3 +25,11 @@ A Python dictionary holds all of the information about each sensor, including a 
  - ADS1015 4-Channel ADC
  - ADS1115 4-Channel ADC
  - LSM303 Accelerometer + Compass
+ - AHT20 Temperature & Humidity
+ - MPRLS Ported Pressure
+ - TLV493D Triple-Axis Magnetometer
+ - TSL2591 High Dynamic Range Digital Light Sensor
+ - AS7341 10-Channel Light / Color Sensor
+ - VCNL4040 Proximity Sensor
+ - INA219 Current Sensor
+ - ADXL343 Digital MEMS Accelerometer
