@@ -1,7 +1,11 @@
 # big-sensor
-Instantly read data from 20 popular Adafruit sensors without any configuration.
+Instantly read data from 20 popular Adafruit I2C sensors without any configuration.
 
-This is a work in progress. Currently the project does one pass of detecting sensors and printing their measurements. In the future, HTTP/MQTT access will be added.
+This is a work in progress, based off the lighter-weight balena [Sensor block](https://github.com/balenablocks/sensor) which has similar functionality
+
+## Use
+
+Connect one or more of the supported sensors below to your device via I2C. Add this container to your project and it should auto-detect your sensor(s) and start displaying readings every 10 seconds on the console output. The sensor data is also available via http on port 7575 of the IP address of the device.
 
 ## How it works
 
