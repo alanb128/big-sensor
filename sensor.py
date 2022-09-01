@@ -361,12 +361,12 @@ for sensor_id, sensor_info in sensor_dict.items():
             read_chip = read_chip_id(bus, sensor_info['i2c_addr'], sensor_info['chip_id'])
             if read_chip != sensor_info['chip_value'] and read_chip != -1:
                 skip_sensor = True
-                print("Skipping sensor {0} because chip ID {1} does not match.".format(sensor_info['short'], hex(sensor_info['chip_id'])))
+                print("Skipping sensor {0} because chip ID {1} does not match {2}.".format(sensor_info['short'], hex(sensor_info['chip_value']), hex(read_chip)))
             
                 
     if not skip_sensor:           
         try:
-            test_sensor = sensor_info['class_ref'](i2c)
+            test_sensor = sensor_info['class_ref'](i2c, sensor_info['i2c_addr'])
         except Exception as e:
             print("{} not found.".format(sensor_info['short']))
             sensor_list.append(None)  # keep list in sync with dict
