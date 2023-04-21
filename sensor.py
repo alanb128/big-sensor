@@ -1,13 +1,6 @@
 # SPDX-FileCopyrightText: 2021 ladyada for Adafruit Industries
 # SPDX-License-Identifier: MIT
 
-# This version uses disct + list and works well
-
-import time
-import board
-import busio
-import adafruit_lis3dh
-from adafruit_apds9960.apds9960 import APDS9960
 from adafruit_pm25.i2c import PM25_I2C
 import adafruit_scd30
 import adafruit_veml7700
@@ -18,18 +11,18 @@ import adafruit_bmp280
 from adafruit_ms8607 import MS8607
 from adafruit_htu21d import HTU21D
 import adafruit_ltr390
-import adafruit_ads1x15.ads1015 as ADS_1015
-import adafruit_ads1x15.ads1115 as ADS_1115
-from adafruit_ads1x15.analog_in import AnalogIn
-import adafruit_lsm303_accel
-import adafruit_lis2mdl
-import adafruit_lsm303dlh_mag
 import adafruit_ahtx0
 import adafruit_mprls
 import adafruit_scd4x
 import adafruit_sgp30
-import adafruit_tlv493d
 import adafruit_tsl2591
+import adafruit_sht4x
+import adafruit_ens160
+import adafruit_sgp40
+
+import time
+import board
+import busio
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import paho.mqtt.client as mqtt
 import socket
@@ -40,53 +33,49 @@ import os
 import datetime
 import json
 
+# Used by certain sensors as offsets
+temperature = None
+humidity = None
+
 #
 # This section has all of the functions specific to each supported sensor to read its data
 #
 
-def sensor_lis3dh(sensor):
-    # Set range of accelerometer (can be RANGE_2_G, RANGE_4_G, RANGE_8_G or RANGE_16_G).
-    sensor.range = adafruit_lis3dh.RANGE_2_G
-    # Read accelerometer values (in m / s ^ 2).  Returns a 3-tuple of x, y,
-    # z axis values.  Divide them by 9.806 to convert to Gs.
-    return { "x": sensor.acceleration[0], "y": sensor.acceleration[1], "z": sensor.acceleration[2] }
-
-def sensor_apds(sensory):
-    # eventually make these selectable with device vars
-    sensory.enable_proximity = True
-    sensory.enable_color = True
-    sensory.enable_gesture = True
-
-    return { "proximity": sensor.proximity, "r": sensory.color_data[0],  "g": sensory.color_data[1], "b": sensory.color_data[2], "c": sensory.color_data[3], "gesture": sensory.gesture() }
 
 def sensor_pm25(sensor):
     try:
         aqdata = sensor.read()
     except RuntimeError:
-        logger.warning("Unable to read from PM25 sensor, retrying...")
+        print("Unable to read from PM25 sensor, retrying...")
         time.sleep(1)
         try:
             aqdata = sensor.read()
         except RuntimeError:
-            logger.warning("Unable to read from PM25 sensor, retrying (2)...")
+            print("Unable to read from PM25 sensor, retrying (2)...")
             time.sleep(2)
             try:
                 aqdata = sensor.read()
             except RuntimeError:
-                logger.warning("Unable to read from PM25 sensor (3), skipping...")
-                return {}
+                print("Unable to read from PM25 sensor (3), skipping...")
+                return {'pm10 standard': None, 'pm25 standard': None, 'pm100 standard': None, 'pm10 env': None, 'pm25 env': None, 'pm100 env': None, 'particles 03um': None, 'particles 05um': None, 'particles 10um': None, 'particles 25um': None, 'particles 50um': None, 'particles 100um': None}
     return aqdata
 
 def sensor_scd30(sensor):
+
+    global temperature, humidity
+	
     i = 0
     while not sensor.data_available:
         time.sleep(0.5)
-        print("Waiting for new SCD30 data...")
         i = i + 1
+        print("Waiting for new SCD30 data... (try {})".format(i))
         if i > 3:
             break
-            return {}
-
+            print("No new SCD30 data...")
+            return {"CO2": None, "Temperature": None, "Humidity": None}
+    temperature = sensor.temperature
+    humidity = sensor.relative_humidity
+	
     return {"CO2": sensor.CO2, "temperature": sensor.temperature, "humidity": sensor.relative_humidity}
 
 def sensor_veml7700(sensor):
@@ -100,89 +89,136 @@ def sensor_veml6070(sensor):
 
 def sensor_bme680(sensor):
 
+    global temperature, humidity
+	
+    temperature = sensor.temperature
+    humidity = sensor.humidity
+	
     # eventually set sensor.seaLevelhPa = 1014.5 as a var
-    return {"Temperature": sensor.temperature, "Gas": sensor.gas, "Humidity": sensor.humidity, "Pressure": sensor.pressure, "Altitude": sensor.altitude}
+    return {"temperature": sensor.temperature, "gas": sensor.gas, "humidity": sensor.humidity, "pressure": sensor.pressure, "altitude": sensor.altitude}
 
 def sensor_bme280(sensor):
 
+    global temperature, humidity
+	
+    temperature = sensor.temperature
+    humidity = sensor.humidity
+	
     # eventually set sensor.seaLevelhPa = 1014.5 as a var
-    return {"Temperature": sensor.temperature, "Humidity": sensor.humidity, "Pressure": sensor.pressure, "Altitude": sensor.altitude}
+    return {"temperature": sensor.temperature, "humidity": sensor.humidity, "pressure": sensor.pressure, "altitude": sensor.altitude}
 
 def sensor_bmp280(sensor):
 
+    global temperature
+
+    temperature = sensor.temperature
+
     # eventually set sensor.seaLevelhPa = 1014.5 as a var
-    return {"Temperature": sensor.temperature, "Pressure": sensor.pressure, "Altitude": sensor.altitude}
+    return {"temperature": sensor.temperature, "pressure": sensor.pressure, "altitude": sensor.altitude}
 
 def sensor_ms8607(sensor):
 
-    return {"Temperature": sensor.temperature, "Humidity": sensor.relative_humidity, "Pressure": sensor.pressure}
+    global temperature, humidity
+
+    temperature = sensor.temperature
+    humidity = sensor.relative_humidity
+	
+    return {"temperature": sensor.temperature, "humidity": sensor.relative_humidity, "pressure": sensor.pressure}
 
 def sensor_htu21d(sensor):
 
-    return {"Temperature": sensor.temperature, "Humidity": sensor.relative_humidity}
+    global temperature, humidity
+
+    temperature = sensor.temperature
+    humidity = sensor.relative_humidity
+	
+    return {"temperature": sensor.temperature, "humidity": sensor.relative_humidity}
 
 def sensor_ltr390(sensor):
 
-    return {"UV": sensor.uvs, "Ambient_Light": sensor.light, "UVI": sensor.uvi, "Lux": sensor.lux}
-
-def sensor_ads1015(sensor):
-
-    # Single mode (default) (not to be confused with single-ended mode) always waits until the analog to digital conversion is completed by the ADC 
-    # Block only supports single-ended mode for now. Maybe differential in the future
-    # eventually add gain var ie ads.gain = 16
-
-    chan0 = AnalogIn(sensor, ADS.P0)
-    chan1 = AnalogIn(sensor, ADS.P1)
-    chan2 = AnalogIn(sensor, ADS.P2)
-    chan1 = AnalogIn(sensor, ADS.P3)
-
-    return {"chan0_value": chan0.value, "chan0_voltage": chan0.voltage, "chan1_value": chan1.value, "chan1_voltage": chan1.voltage,
-            "chan2_value": chan2.value, "chan2_voltage": chan2.voltage, "chan3_value": chan3.value, "chan3_voltage": chan3.voltage}
-
-def sensor_lsm303(sensor):
-
-    # Need to choose LSM303AGR or LSM303DLH
-    # No tap detection
-    return {"Acceleration": sensor.acceleration, "Magnetometer": sensor.magnetic}
+    return {"UV": sensor.uvs, "ambient_light": sensor.light, "UVI": sensor.uvi, "lux": sensor.lux}
 
 def sensor_aht20(sensor):
 
-    return {"Temperature": sensor.temperature, "Humidity": sensor.relative_humidity}
+    global temperature, humidity
+
+    temperature = sensor.temperature
+    humidity = sensor.relative_humidity
+	
+    return {"temperature": sensor.temperature, "humidity": sensor.relative_humidity}
 
 def sensor_mprls(sensor):
 
     return {"pressure": sensor.pressure}
 
 def sensor_scd40(sensor):
+    
+    global scd40_started, temperature, humidity
+    
+    # See https://forums.balena.io/t/rpi3-clock-stretching-using-fleet-variables/1964 to fix CRC errors
+    # And https://learn.adafruit.com/circuitpython-on-raspberrypi-linux/i2c-clock-stretching
+
+    if not scd40_started:
+        sensor.start_periodic_measurement()
+        scd40_started = True
 
     if sensor.data_ready:
-        return {"serial_number": [hex(i) for i in sensor.serial_number], "CO2": sensor.CO2, 
-                "Temperature": sensor.temperature, "Humidity": sensor.relative_humidity}
+        temperature = sensor.temperature
+        humidity = sensor.relative_humidity
+        return {"CO2": sensor.CO2, "temperature": sensor.temperature, "humidity": sensor.relative_humidity}
     else:
-        return {"serial_number": [hex(i) for i in sensor.serial_number]}
+       return {"CO2": None, "temperature": None, "humidity": None}
 
 def sensor_sgp30(sensor):
 
     # Need set/get baseline, set humidity
     return {"serial_number": [hex(i) for i in sensor.serial], "eCO2": sensor.eCO2, "TVOC": sensor.TVOC}
 
-def sensor_ads1015(sensor):
-
-    return {"x": 0 }
-
-def sensor_ads1115(sensor):
-
-    return {"x": 0 }
-
-def sensor_tlv493d(sensor):
-
-    return {"Magnetometer": sensor.magnetic}
-
 def sensor_tsl2591(sensor):
 
-    return {"Lux": sensor.lux, "Infrared": sensor.infrared, "Visible": sensor.visible}
+    # TODO
+    # Optionally change gain and integration time
+    # Use device variables
+    return {"total_light": sensor.lux, "infrared": sensor.infrared, "visible": sensor.visible}
+
+def sensor_ens160(sensor):
+
+    # Set the temperature compensation variable to the ambient temp
+    # for best sensor calibration
+    if temperature is not None:
+        sensor.temperature_compensation = temperature
+        print("Using ENS160 temperature compensation.")
+    # Same for ambient relative humidity
+    if pressure is not None:
+        sensor.humidity_compensation = humidity
+        print("Using ENS160 humidity compensation.")
+
+    return {"AQI": sensor.AQI, "TVOC": sensor.TVOC, "eCO2": sensor.eCO2 }
+
+def sensor_sgp40(sensor):
+
+    if (temperature is not None) and (humidity is not None):
+        print("Using SGP40 temperature and humidity compensation.")
+        return {"raw_gas": sensor.measure_raw(temperature = temperature, relative_humidity = humidity)}
+    else:
+        return {"raw_gas": sensor.raw }
+
+def sensor_sht4x(sensor):
+
+    global temperature, humidity
+	
+    #TODO:
+    sensor.mode = adafruit_sht4x.Mode.NOHEAT_HIGHPRECISION
+    # Can also set the mode to enable heater - make a device variable
+    # sht.mode = adafruit_sht4x.Mode.LOWHEAT_100MS
+    temperature = sensor.temperature
+    humidity = sensor.relative_humidity
+    return {"temperature": sensor.temperature, "humidity": sensor.relative_humidity, "serial_number": hex(sensor.serial_number), "mode": adafruit_sht4x.Mode.string[sensor.mode] }
 
 
+#
+# End of sensor classes
+#
 
 def mqtt_detect():
     
@@ -254,6 +290,10 @@ def get_reading():
 # Program starts here
 ###############################
 
+
+scd40_started = False # Flag for this sensor only because it needs a startup call
+
+print_readings = os.getenv('PRINT_READINGS', True)
 mqtt_address = os.getenv('MQTT_ADDRESS', 'none')
 use_httpserver = os.getenv('ALWAYS_USE_HTTPSERVER', 0)
 try:
@@ -293,6 +333,7 @@ if mqtt_address != "none":
 else:
     enable_httpserver = "True"
 
+# See https://www.codementor.io/@joaojonesventura/building-a-basic-http-server-from-scratch-in-python-1cedkg0842
 if enable_httpserver == "True":
     SERVER_HOST = '0.0.0.0'
     SERVER_PORT = 7575
@@ -308,37 +349,39 @@ if enable_httpserver == "True":
     t.start()
 
             
-# Dictionary of all information about a supported sensor
+# Dictionary of all information about a supported sensor, add a row for each sensor's supported I2C address
 sensor_dict = {
-    0: {'name': 'LIS3DH Triple-Axis Accelerometer', 'short': 'LIS3DH', 'func': sensor_lis3dh, 'class_ref': adafruit_lis3dh.LIS3DH_I2C, 'i2c_addr': 0x18, 'chip_id': 0x0f, 'chip_value': 0x33},
-    1: {'name': 'APDS9960 Proximity, Light, RGB, and Gesture', 'short': 'APDS9960', 'func': sensor_apds, 'class_ref': APDS9960, 'i2c_addr': 0x39, 'chip_id': 0x92, 'chip_value': 0xab},
-    2: {'name': 'PMSA003I Air Quality', 'short': 'PM25', 'func': sensor_pm25, 'class_ref': PM25_I2C, 'i2c_addr': 0x12, 'chip_id': 0x1c, 'chip_value': 0x42},
-    3: {'name': 'SCD-30 - NDIR CO2 Temperature and Humidity', 'short': 'SCD30', 'func': sensor_scd30, 'class_ref': adafruit_scd30.SCD30, 'i2c_addr': 0x61, 'chip_id': 0x00, 'chip_value': 0x00},
-    4: {'name': 'SCD-40 True CO2, Temperature and Humidity', 'short': 'SCD40', 'func': sensor_scd40, 'class_ref': adafruit_scd4x.SCD4X, 'i2c_addr': 0x62, 'chip_id': 0x00, 'chip_value': 0x00},
-    5: {'name': 'SGP30 TVOC/eCO2 Gas Sensor', 'short': 'SGP30', 'func': sensor_sgp30, 'class_ref': adafruit_sgp30.Adafruit_SGP30, 'i2c_addr': 0x58, 'chip_id': 0x00, 'chip_value': 0x00},
-    6: {'name': 'VEML6070 UV', 'short': 'VEML6070', 'func': sensor_veml6070, 'class_ref': adafruit_veml6070.VEML6070, 'i2c_addr': 0x71, 'chip_id': 0x00, 'chip_value': 0x00},
-    7: {'name': 'VEML7700 Ambient Light', 'short': 'VEML7700', 'func': sensor_veml7700, 'class_ref': adafruit_veml7700.VEML7700, 'i2c_addr': 0x10, 'chip_id': 0x00, 'chip_value': 0x00},
-    8: {'name': 'BME680 - Temperature, Humidity, Pressure and Gas', 'short': 'BME680', 'func': sensor_bme680, 'class_ref': adafruit_bme680.Adafruit_BME680_I2C, 'i2c_addr': 0x77, 'chip_id': 0xd0, 'chip_value': 0x61},
-    9: {'name': 'BME280 Humidity + Barometric Pressure + Temperature', 'short': 'BME280', 'func': sensor_bme280, 'class_ref': adafruit_bme280.Adafruit_BME280_I2C, 'i2c_addr': 0x77, 'chip_id': 0xd0, 'chip_value': 0x60},
-    10: {'name': 'BMP280 Barometric Pressure + Temperature', 'short': 'BMP280', 'func': sensor_bmp280, 'class_ref': adafruit_bmp280.Adafruit_BMP280_I2C, 'i2c_addr': 0x77, 'chip_id': 0xd0, 'chip_value': 0x58},
-    11: {'name': 'MS8607 Pressure, Temperature, and Humidity', 'short': 'MS8607', 'func': sensor_ms8607, 'class_ref': MS8607, 'i2c_addr': 0x76, 'chip_id': 0x00, 'chip_value': 0x08}, # also 0x40
-    12: {'name': 'HTU21D-F Temperature & Humidity', 'short': 'HTU21D', 'func': sensor_htu21d, 'class_ref': HTU21D, 'i2c_addr': 0x40, 'chip_id': 0x00, 'chip_value': 0x00},
-    13: {'name': 'LTR390 UV', 'short': 'LTR390', 'func': sensor_ltr390, 'class_ref': adafruit_ltr390.LTR390, 'i2c_addr': 0x53, 'chip_id': 0x06, 'chip_value': 0xb2}, # need to confirm ID
-    14: {'name': 'ADS1015 4-Channel ADC', 'short': 'ADS1015', 'func': sensor_ads1015, 'class_ref': ADS_1015.ADS1015, 'i2c_addr': 0x48, 'chip_id': 0x00, 'chip_value': 0x00},
-    15: {'name': 'ADS1115 4-Channel ADC', 'short': 'ADS1115', 'func': sensor_ads1115, 'class_ref': ADS_1115.ADS1115, 'i2c_addr': 0x48, 'chip_id': 0x00, 'chip_value': 0x00},
-    16: {'name': 'LSM303 Accelerometer + Compass', 'short': 'LSM303', 'func': sensor_lsm303, 'class_ref': adafruit_lsm303_accel.LSM303_Accel, 'i2c_addr': 0x48, 'chip_id': 0x0f, 'chip_value': 0x33}, # and 2 different magnetometers
-    17: {'name': 'AHT20 Temperature & Humidity', 'short': 'AHT20', 'func': sensor_aht20, 'class_ref': adafruit_ahtx0.AHTx0, 'i2c_addr': 0x38, 'chip_id': 0x00, 'chip_value': 0x00},
-    18: {'name': 'MPRLS Ported Pressure', 'short': 'MPRLS', 'func': sensor_mprls, 'class_ref': adafruit_mprls.MPRLS, 'i2c_addr': 0x18, 'chip_id': 0x00, 'chip_value': 0x00},
-    19: {'name': 'TLV493D Triple-Axis Magnetometer', 'short': 'TLV493D', 'func': sensor_tlv493d, 'class_ref': adafruit_tlv493d.TLV493D, 'i2c_addr': 0x5E, 'chip_id': 0x00, 'chip_value': 0x00},
-    20: {'name': 'TSL2591 High Dynamic Range Digital Light Sensor', 'short': 'TSL2591', 'func': sensor_tsl2591, 'class_ref': adafruit_tsl2591.TSL2591, 'i2c_addr': 0x29, 'chip_id': 0x00, 'chip_value': 0x00}
+    0: {'name': 'PMSA003I Air Quality', 'short': 'PM25', 'func': sensor_pm25, 'class_ref': PM25_I2C, 'arrgh': {'reset_pin': None}, 'i2c_addr': 0x12, 'chip_id': 0x1c, 'chip_value': 0x42},
+    1: {'name': 'SCD-30 - NDIR CO2 Temperature and Humidity', 'short': 'SCD30', 'func': sensor_scd30, 'class_ref': adafruit_scd30.SCD30, 'arrgh': {}, 'i2c_addr': 0x61, 'chip_id': 0x00, 'chip_value': 0x00},
+    2: {'name': 'SCD-40 True CO2, Temperature and Humidity', 'short': 'SCD40', 'func': sensor_scd40, 'class_ref': adafruit_scd4x.SCD4X,'arrgh': {}, 'i2c_addr': 0x62, 'chip_id': 0x00, 'chip_value': 0x00},
+    3: {'name': 'SGP30 TVOC/eCO2 Gas Sensor', 'short': 'SGP30', 'func': sensor_sgp30, 'class_ref': adafruit_sgp30.Adafruit_SGP30,'arrgh': {}, 'i2c_addr': 0x58, 'chip_id': 0x00, 'chip_value': 0x00},
+    4: {'name': 'VEML6070 UV', 'short': 'VEML6070', 'func': sensor_veml6070, 'class_ref': adafruit_veml6070.VEML6070,'arrgh': {},  'i2c_addr': 0x38, 'chip_id': 0x00, 'chip_value': 0x00}, # and 0x39
+    5: {'name': 'VEML7700 Ambient Light', 'short': 'VEML7700', 'func': sensor_veml7700, 'class_ref': adafruit_veml7700.VEML7700,'arrgh': {},  'i2c_addr': 0x10, 'chip_id': 0x00, 'chip_value': 0x00},
+    6: {'name': 'BME680 - Temperature, Humidity, Pressure and Gas', 'short': 'BME680-0x76', 'func': sensor_bme680, 'class_ref': adafruit_bme680.Adafruit_BME680_I2C, 'arrgh': {'address': 0x76}, 'i2c_addr': 0x76, 'chip_id': 0xd0, 'chip_value': 0x61},
+    7: {'name': 'BME680 - Temperature, Humidity, Pressure and Gas', 'short': 'BME680-0x77', 'func': sensor_bme680, 'class_ref': adafruit_bme680.Adafruit_BME680_I2C, 'arrgh': {'address': 0x77}, 'i2c_addr': 0x77, 'chip_id': 0xd0, 'chip_value': 0x61},
+    8: {'name': 'BME280 Humidity + Barometric Pressure + Temperature', 'short': 'BME280-0x76', 'func': sensor_bme280, 'class_ref': adafruit_bme280.Adafruit_BME280_I2C,'arrgh': {'address': 0x76},  'i2c_addr': 0x76, 'chip_id': 0xd0, 'chip_value': 0x60},
+    8: {'name': 'BME280 Humidity + Barometric Pressure + Temperature', 'short': 'BME280-0x77', 'func': sensor_bme280, 'class_ref': adafruit_bme280.Adafruit_BME280_I2C,'arrgh': {'address': 0x77},  'i2c_addr': 0x77, 'chip_id': 0xd0, 'chip_value': 0x60},
+    9: {'name': 'BMP280 Barometric Pressure + Temperature', 'short': 'BMP280-0x76', 'func': sensor_bmp280, 'class_ref': adafruit_bmp280.Adafruit_BMP280_I2C, 'arrgh': {'address': 0x76}, 'i2c_addr': 0x76, 'chip_id': 0xd0, 'chip_value': 0x58},
+    9: {'name': 'BMP280 Barometric Pressure + Temperature', 'short': 'BMP280-0x77', 'func': sensor_bmp280, 'class_ref': adafruit_bmp280.Adafruit_BMP280_I2C, 'arrgh': {'address': 0x77}, 'i2c_addr': 0x77, 'chip_id': 0xd0, 'chip_value': 0x58},
+    10: {'name': 'MS8607 Pressure, Temperature, and Humidity', 'short': 'MS8607', 'func': sensor_ms8607, 'class_ref': MS8607, 'arrgh': {}, 'i2c_addr': 0x76, 'chip_id': 0x00, 'chip_value': 0x08}, # also uses 0x40
+    11: {'name': 'HTU21D-F Temperature & Humidity', 'short': 'HTU21D', 'func': sensor_htu21d, 'class_ref': HTU21D, 'arrgh': {}, 'i2c_addr': 0x40, 'chip_id': 0x00, 'chip_value': 0x00},
+    12: {'name': 'LTR390 UV', 'short': 'LTR390', 'func': sensor_ltr390, 'class_ref': adafruit_ltr390.LTR390, 'arrgh': {}, 'i2c_addr': 0x53, 'chip_id': 0x06, 'chip_value': 0xb2}, # need to confirm ID
+    13: {'name': 'AHT20 Temperature & Humidity', 'short': 'AHT20', 'func': sensor_aht20, 'class_ref': adafruit_ahtx0.AHTx0, 'arrgh': {}, 'i2c_addr': 0x38, 'chip_id': 0x00, 'chip_value': 0x00},
+    14: {'name': 'MPRLS Ported Pressure', 'short': 'MPRLS', 'func': sensor_mprls, 'class_ref': adafruit_mprls.MPRLS, 'arrgh': {'psi_min': 0, 'psi_max':25}, 'i2c_addr': 0x18, 'chip_id': 0x00, 'chip_value': 0x00},
+    15: {'name': 'TSL2591 High Dynamic Range Digital Light Sensor', 'short': 'TSL2591', 'func': sensor_tsl2591, 'class_ref': adafruit_tsl2591.TSL2591, 'arrgh': {}, 'i2c_addr': 0x29, 'chip_id': 0x00, 'chip_value': 0x00}, # Also uses 0x28
+    16: {'name': 'SGP40 VOC Index', 'short': 'SGP40', 'func': sensor_sgp40, 'class_ref': adafruit_sgp40.SGP40, 'arrgh': {}, 'i2c_addr': 0x59, 'chip_id': 0x00, 'chip_value': 0x00},
+    17: {'name': 'ENS160 MOX Gas Sensor', 'short': 'ENS160-0x52', 'func': sensor_ens160, 'class_ref': adafruit_ens160.ENS160, 'arrgh': {'address': 0x52}, 'i2c_addr': 0x52, 'chip_id': 0x00, 'chip_value': 0x00},
+    17: {'name': 'ENS160 MOX Gas Sensor', 'short': 'ENS160-0x53', 'func': sensor_ens160, 'class_ref': adafruit_ens160.ENS160, 'arrgh': {'address': 0x53}, 'i2c_addr': 0x53, 'chip_id': 0x00, 'chip_value': 0x00}, #Has Part ID at 0x00
+    18: {'name': 'SHT4X Temperature & Humidity Sensor', 'short': 'SHT4X', 'func': sensor_sht4x, 'class_ref': adafruit_sht4x.SHT4x, 'arrgh': {}, 'i2c_addr': 0x44, 'chip_id': 0x00, 'chip_value': 0x00}
 }
 # List of all sensors in same order as dict, with None for sensors not found
 sensor_list = []
 
-i2c = board.I2C()  # uses board.SCL and board.SDA
+#i2c = board.I2C()  # uses board.SCL and board.SDA
+i2c = busio.I2C(board.SCL, board.SDA, frequency=100000)
 i = 0
 
-# See which sensors we have attached and update 'found' value in dict
+# See which sensors we have attached and update sensor_list
 for sensor_id, sensor_info in sensor_dict.items():
 
     skip_sensor = False
@@ -361,13 +404,18 @@ for sensor_id, sensor_info in sensor_dict.items():
             read_chip = read_chip_id(bus, sensor_info['i2c_addr'], sensor_info['chip_id'])
             if read_chip != sensor_info['chip_value'] and read_chip != -1:
                 skip_sensor = True
-                print("Skipping sensor {0} because chip ID {1} does not match.".format(sensor_info['short'], hex(sensor_info['chip_id'])))
+                print("Skipping sensor {0} because chip ID {1} does not match {2}.".format(sensor_info['short'], hex(sensor_info['chip_value']), hex(read_chip)))
             
                 
     if not skip_sensor:           
         try:
-            test_sensor = sensor_info['class_ref'](i2c)
+            print("testing: {}".format(sensor_info['short']))
+            # See if sensor is loaded by trying to instantiate it...
+            # Using arg list (arrgh) from sensor_info if additional parameters are required
+            # ** is for unpacking kwargs, see https://www.educative.io/answers/what-is-unpacking-keyword-arguments-with-dictionaries-in-python
+            test_sensor = sensor_info['class_ref'](i2c, **(sensor_info['arrgh']))
         except Exception as e:
+            print(e)
             print("{} not found.".format(sensor_info['short']))
             sensor_list.append(None)  # keep list in sync with dict
         else:
@@ -385,23 +433,15 @@ for sensor_id, sensor_info in sensor_dict.items():
 
     i = i + 1
 
-# Loop through sensors and print values of attached ones using their specific function
-i = 0
-#print("Sensor list: {}".format(sensor_list))
-#print("Sensor dict: {}".format(sensor_dict))
-print(" ")
-#for sensor in sensor_list:
-#    #print(sensor)
-#    if sensor is not None:
-#        print("{0}: {1}".format(sensor_dict[i]['short'], sensor_dict[i]['func'](sensor)))
-#    i = i + 1
 while True:
-    if mqtt_address == "none":
-        print("{}:".format(datetime.datetime.now()))
+
+    if print_readings:
+	    print("{}:".format(datetime.datetime.now()))
         print(get_reading())
         print("------------------------------")
-        time.sleep(10)
-    else:
+    if mqtt_address != "none":
         client.publish(publish_topic, json.dumps(get_reading()))
         print("Published MQTT.")
-        time.sleep(interval)
+
+    time.sleep(interval)
+
