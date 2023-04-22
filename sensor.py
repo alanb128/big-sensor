@@ -63,7 +63,7 @@ def sensor_pm25(sensor):
 def sensor_scd30(sensor):
 
     global temperature, humidity
-	
+
     i = 0
     while not sensor.data_available:
         time.sleep(0.5)
@@ -75,7 +75,7 @@ def sensor_scd30(sensor):
             return {"CO2": None, "Temperature": None, "Humidity": None}
     temperature = sensor.temperature
     humidity = sensor.relative_humidity
-	
+
     return {"CO2": sensor.CO2, "temperature": sensor.temperature, "humidity": sensor.relative_humidity}
 
 def sensor_veml7700(sensor):
@@ -90,20 +90,20 @@ def sensor_veml6070(sensor):
 def sensor_bme680(sensor):
 
     global temperature, humidity
-	
+
     temperature = sensor.temperature
     humidity = sensor.humidity
-	
+
     # eventually set sensor.seaLevelhPa = 1014.5 as a var
     return {"temperature": sensor.temperature, "gas": sensor.gas, "humidity": sensor.humidity, "pressure": sensor.pressure, "altitude": sensor.altitude}
 
 def sensor_bme280(sensor):
 
     global temperature, humidity
-	
+
     temperature = sensor.temperature
     humidity = sensor.humidity
-	
+
     # eventually set sensor.seaLevelhPa = 1014.5 as a var
     return {"temperature": sensor.temperature, "humidity": sensor.humidity, "pressure": sensor.pressure, "altitude": sensor.altitude}
 
@@ -122,7 +122,7 @@ def sensor_ms8607(sensor):
 
     temperature = sensor.temperature
     humidity = sensor.relative_humidity
-	
+
     return {"temperature": sensor.temperature, "humidity": sensor.relative_humidity, "pressure": sensor.pressure}
 
 def sensor_htu21d(sensor):
@@ -131,7 +131,7 @@ def sensor_htu21d(sensor):
 
     temperature = sensor.temperature
     humidity = sensor.relative_humidity
-	
+
     return {"temperature": sensor.temperature, "humidity": sensor.relative_humidity}
 
 def sensor_ltr390(sensor):
@@ -144,7 +144,7 @@ def sensor_aht20(sensor):
 
     temperature = sensor.temperature
     humidity = sensor.relative_humidity
-	
+
     return {"temperature": sensor.temperature, "humidity": sensor.relative_humidity}
 
 def sensor_mprls(sensor):
@@ -206,7 +206,7 @@ def sensor_sgp40(sensor):
 def sensor_sht4x(sensor):
 
     global temperature, humidity
-	
+
     #TODO:
     sensor.mode = adafruit_sht4x.Mode.NOHEAT_HIGHPRECISION
     # Can also set the mode to enable heater - make a device variable
@@ -297,7 +297,7 @@ print_readings = os.getenv('PRINT_READINGS', True)
 mqtt_address = os.getenv('MQTT_ADDRESS', 'none')
 use_httpserver = os.getenv('ALWAYS_USE_HTTPSERVER', 0)
 try:
-    interval = os.getenv('MQTT_PUB_INTERVAL', '8')
+    interval = int(os.getenv('MQTT_PUB_INTERVAL', '8'))
 except Exception as e:
     print("Error converting MQTT_PUB_INTERVAL: Must be integer or float! Using default.")
     interval = 8
@@ -409,14 +409,12 @@ for sensor_id, sensor_info in sensor_dict.items():
                 
     if not skip_sensor:           
         try:
-            print("testing: {}".format(sensor_info['short']))
+            print("Looking for a: {}".format(sensor_info['short']))
             # See if sensor is loaded by trying to instantiate it...
             # Using arg list (arrgh) from sensor_info if additional parameters are required
             # ** is for unpacking kwargs, see https://www.educative.io/answers/what-is-unpacking-keyword-arguments-with-dictionaries-in-python
             test_sensor = sensor_info['class_ref'](i2c, **(sensor_info['arrgh']))
         except Exception as e:
-            print(e)
-            print("{} not found.".format(sensor_info['short']))
             sensor_list.append(None)  # keep list in sync with dict
         else:
             print("Found a {} sensor!".format(sensor_info['name']))
@@ -425,8 +423,6 @@ for sensor_id, sensor_info in sensor_dict.items():
                 test_sensor
             except NameError:
                 test_sensor = None
-            #else:
-            #    sensor_info['found'] = True
             sensor_list.append(test_sensor)
     else:
         sensor_list.append(None)  # keep list in sync with dict
@@ -436,7 +432,7 @@ for sensor_id, sensor_info in sensor_dict.items():
 while True:
 
     if print_readings:
-	    print("{}:".format(datetime.datetime.now()))
+        print("{}:".format(datetime.datetime.now()))
         print(get_reading())
         print("------------------------------")
     if mqtt_address != "none":

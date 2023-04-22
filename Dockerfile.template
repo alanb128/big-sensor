@@ -31,5 +31,5 @@ COPY *.py ./
 ENV UDEV=1
 
 # basic command
-CMD ["python3", "sensor.py"]
-
+#CMD ["python3", "sensor.py"]
+CMD ["sleep", "infinity"]
