@@ -37,6 +37,8 @@ import json
 temperature = None
 humidity = None
 
+verbose = True
+
 #
 # This section has all of the functions specific to each supported sensor to read its data
 #
@@ -187,18 +189,21 @@ def sensor_ens160(sensor):
     # for best sensor calibration
     if temperature is not None:
         sensor.temperature_compensation = temperature
-        print("Using ENS160 temperature compensation.")
+        if verbose:
+            print("Using ENS160 temperature compensation.")
     # Same for ambient relative humidity
     if pressure is not None:
         sensor.humidity_compensation = humidity
-        print("Using ENS160 humidity compensation.")
+        if verbose:
+            print("Using ENS160 humidity compensation.")
 
     return {"AQI": sensor.AQI, "TVOC": sensor.TVOC, "eCO2": sensor.eCO2 }
 
 def sensor_sgp40(sensor):
 
     if (temperature is not None) and (humidity is not None):
-        print("Using SGP40 temperature and humidity compensation.")
+        if verbose:
+            print("Using SGP40 temperature and humidity compensation.")
         return {"raw_gas": sensor.measure_raw(temperature = temperature, relative_humidity = humidity)}
     else:
         return {"raw_gas": sensor.raw }
@@ -240,8 +245,10 @@ def mqtt_detect():
         services = r[app_name]['services'].keys()
 
         if "mqtt" in services:
+            print("Found an mqtt service on this device...")
             return True
         else:
+            print("Did not find an mqtt service on this device...")
             return False
  
  
@@ -254,7 +261,7 @@ def background_web(server_socket):
 
         # Get the client request
         request = client_connection.recv(1024).decode()
-        print(request)
+        print("HTTP client request: {}".format(request))
 
         # Send HTTP response
         response = 'HTTP/1.0 200 OK\n\n' + json.dumps(get_reading())
@@ -293,7 +300,10 @@ def get_reading():
 
 scd40_started = False # Flag for this sensor only because it needs a startup call
 
-print_readings = os.getenv('PRINT_READINGS', True)
+verbose = os.getenv('VERBOSE', True)
+if verbose == "0":
+    verbose = False
+    
 mqtt_address = os.getenv('MQTT_ADDRESS', 'none')
 use_httpserver = os.getenv('ALWAYS_USE_HTTPSERVER', 0)
 try:
@@ -409,7 +419,7 @@ for sensor_id, sensor_info in sensor_dict.items():
                 
     if not skip_sensor:           
         try:
-            print("Looking for a: {}".format(sensor_info['short']))
+            print("Looking for sensor: {}".format(sensor_info['short']))
             # See if sensor is loaded by trying to instantiate it...
             # Using arg list (arrgh) from sensor_info if additional parameters are required
             # ** is for unpacking kwargs, see https://www.educative.io/answers/what-is-unpacking-keyword-arguments-with-dictionaries-in-python
@@ -429,15 +439,18 @@ for sensor_id, sensor_info in sensor_dict.items():
 
     i = i + 1
 
+print("Starting measurements...")
+
 while True:
 
-    if print_readings:
+    if verbose:
         print("{}:".format(datetime.datetime.now()))
         print(get_reading())
         print("------------------------------")
     if mqtt_address != "none":
         client.publish(publish_topic, json.dumps(get_reading()))
-        print("Published MQTT.")
+        if verbose:
+            print("Publishing MQTT...")
 
     time.sleep(interval)
 

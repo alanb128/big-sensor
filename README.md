@@ -9,13 +9,21 @@ Connect one or more of the supported sensors below to your device via I2C. Add t
 
 If there is another service on the device named `mqtt` the sensor readings will be published to that broker. Otherwise, you can specify an MQTT broker address with the environment variable `MQTT_ADDRESS`. If MQTT is active, the http server will be disabled. To enable the http server on port 7575 anyway, set `ALWAYS_USE_HTTPSERVER` to `1`. 
 
-You can specify the MQTT topic to be published with `MQTT_PUB_TOPIC` otherwise the default topic is `sensors`. The `MQTT_PUB_INTERVAL` sets the number of seconds between packet publication. The default value is 8 seconds. This interval also controls how often the sensor data is printed to the standard output. To disable this printing, set `PRINT_READINGS` to `0`.
+You can specify the MQTT topic to be published with `MQTT_PUB_TOPIC` otherwise the default topic is `sensors`. The `MQTT_PUB_INTERVAL` sets the number of seconds between packet publication. The default value is 8 seconds. This interval also controls how often the sensor data is printed to the standard output. To disable this printing, set `VERBOSE` to `0`. (This also eliminates other repetitive non-error printing.)
 
-To add the block to your docker-compose file:
+To add the block to your docker-compose file, see this example:
 
 ```
+version: '2.1'
 
-TBD
+services:
+  connector:
+    image: bh.cr/al_s_apps/big-sensor-armv7hf
+    restart: always
+    labels:
+      io.balena.features.supervisor-api: 1  # necessary to discover services
+    privileged: true # necessary to read sensors
+
 ```
 
 
