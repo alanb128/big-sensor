@@ -192,7 +192,7 @@ def sensor_ens160(sensor):
         if verbose:
             print("Using ENS160 temperature compensation.")
     # Same for ambient relative humidity
-    if pressure is not None:
+    if humidity is not None:
         sensor.humidity_compensation = humidity
         if verbose:
             print("Using ENS160 humidity compensation.")
