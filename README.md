@@ -17,7 +17,7 @@ To add the block to your docker-compose file, see this example:
 version: '2.1'
 
 services:
-  connector:
+  big-sensor:
     image: bh.cr/al_s_apps/big-sensor-armv7hf
     restart: always
     labels:
