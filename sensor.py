@@ -388,7 +388,7 @@ sensor_dict = {
 sensor_list = []
 
 #i2c = board.I2C()  # uses board.SCL and board.SDA
-i2c = busio.I2C(board.SCL, board.SDA, frequency=100000)
+i2c = busio.I2C(board.SCL, board.SDA, frequency=10000)
 i = 0
 
 # See which sensors we have attached and update sensor_list
