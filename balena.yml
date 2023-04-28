@@ -1,0 +1,23 @@
+name: big-sensor
+type: sw.application
+description: >-
+  Read data from over 15 popular Adafruit environmental sensors with no configuration. Data is available via http or MQTT.
+assets:
+  repository:
+    type: blob.asset
+    data:
+      url: 'https://github.com/alanb128/big-sensor'
+  logo:
+    type: blob.asset
+    data:
+      url: >-
+        https://raw.githubusercontent.com/alanb128/big-sensor/main/logo.png
+data:
+  defaultDeviceType: raspberrypi3
+  supportedDeviceTypes:
+    - raspberry-pi
+    - raspberry-pi2
+    - raspberrypi3
+    - raspberrypi4-64
+    - raspberrypi400-64
+version: 1.0.1
