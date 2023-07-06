@@ -1,5 +1,5 @@
 # big-sensor
-Instantly read data from over 15 popular Adafruit I2C environmental sensors without any configuration.
+Instantly read data from 20+ popular Adafruit I2C environmental sensors without any configuration.
 
 This is based off the lighter-weight balena [Sensor block](https://github.com/balenablocks/sensor) which has similar functionality but supports fewer sensors.
 
@@ -50,6 +50,8 @@ services:
  - Sensirion SHT40 Temperature & Humidity Sensor
  - ENS160 MOX Gas Sensor
  
+The follwong sensors can be on two different I2C addresses, so up to two at a time (if on different addresses) can be supported: BME680, BME280, BMP280, ENS160.
+
 ## Options 
 
 The sensors are read by default from bus number 1 (`/dev/i2c-1`). To change the bus number, use the variable `BUS_NUMBER`.

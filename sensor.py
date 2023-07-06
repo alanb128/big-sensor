@@ -370,19 +370,19 @@ sensor_dict = {
     6: {'name': 'BME680 - Temperature, Humidity, Pressure and Gas', 'short': 'BME680-0x76', 'func': sensor_bme680, 'class_ref': adafruit_bme680.Adafruit_BME680_I2C, 'arrgh': {'address': 0x76}, 'i2c_addr': 0x76, 'chip_id': 0xd0, 'chip_value': 0x61},
     7: {'name': 'BME680 - Temperature, Humidity, Pressure and Gas', 'short': 'BME680-0x77', 'func': sensor_bme680, 'class_ref': adafruit_bme680.Adafruit_BME680_I2C, 'arrgh': {'address': 0x77}, 'i2c_addr': 0x77, 'chip_id': 0xd0, 'chip_value': 0x61},
     8: {'name': 'BME280 Humidity + Barometric Pressure + Temperature', 'short': 'BME280-0x76', 'func': sensor_bme280, 'class_ref': adafruit_bme280.Adafruit_BME280_I2C,'arrgh': {'address': 0x76},  'i2c_addr': 0x76, 'chip_id': 0xd0, 'chip_value': 0x60},
-    8: {'name': 'BME280 Humidity + Barometric Pressure + Temperature', 'short': 'BME280-0x77', 'func': sensor_bme280, 'class_ref': adafruit_bme280.Adafruit_BME280_I2C,'arrgh': {'address': 0x77},  'i2c_addr': 0x77, 'chip_id': 0xd0, 'chip_value': 0x60},
-    9: {'name': 'BMP280 Barometric Pressure + Temperature', 'short': 'BMP280-0x76', 'func': sensor_bmp280, 'class_ref': adafruit_bmp280.Adafruit_BMP280_I2C, 'arrgh': {'address': 0x76}, 'i2c_addr': 0x76, 'chip_id': 0xd0, 'chip_value': 0x58},
-    9: {'name': 'BMP280 Barometric Pressure + Temperature', 'short': 'BMP280-0x77', 'func': sensor_bmp280, 'class_ref': adafruit_bmp280.Adafruit_BMP280_I2C, 'arrgh': {'address': 0x77}, 'i2c_addr': 0x77, 'chip_id': 0xd0, 'chip_value': 0x58},
-    10: {'name': 'MS8607 Pressure, Temperature, and Humidity', 'short': 'MS8607', 'func': sensor_ms8607, 'class_ref': MS8607, 'arrgh': {}, 'i2c_addr': 0x76, 'chip_id': 0x00, 'chip_value': 0x08}, # also uses 0x40
-    11: {'name': 'HTU21D-F Temperature & Humidity', 'short': 'HTU21D', 'func': sensor_htu21d, 'class_ref': HTU21D, 'arrgh': {}, 'i2c_addr': 0x40, 'chip_id': 0x00, 'chip_value': 0x00},
-    12: {'name': 'LTR390 UV', 'short': 'LTR390', 'func': sensor_ltr390, 'class_ref': adafruit_ltr390.LTR390, 'arrgh': {}, 'i2c_addr': 0x53, 'chip_id': 0x06, 'chip_value': 0xb2}, # need to confirm ID
-    13: {'name': 'AHT20 Temperature & Humidity', 'short': 'AHT20', 'func': sensor_aht20, 'class_ref': adafruit_ahtx0.AHTx0, 'arrgh': {}, 'i2c_addr': 0x38, 'chip_id': 0x00, 'chip_value': 0x00},
-    14: {'name': 'MPRLS Ported Pressure', 'short': 'MPRLS', 'func': sensor_mprls, 'class_ref': adafruit_mprls.MPRLS, 'arrgh': {'psi_min': 0, 'psi_max':25}, 'i2c_addr': 0x18, 'chip_id': 0x00, 'chip_value': 0x00},
-    15: {'name': 'TSL2591 High Dynamic Range Digital Light Sensor', 'short': 'TSL2591', 'func': sensor_tsl2591, 'class_ref': adafruit_tsl2591.TSL2591, 'arrgh': {}, 'i2c_addr': 0x29, 'chip_id': 0x00, 'chip_value': 0x00}, # Also uses 0x28
-    16: {'name': 'SGP40 VOC Index', 'short': 'SGP40', 'func': sensor_sgp40, 'class_ref': adafruit_sgp40.SGP40, 'arrgh': {}, 'i2c_addr': 0x59, 'chip_id': 0x00, 'chip_value': 0x00},
-    17: {'name': 'ENS160 MOX Gas Sensor', 'short': 'ENS160-0x52', 'func': sensor_ens160, 'class_ref': adafruit_ens160.ENS160, 'arrgh': {'address': 0x52}, 'i2c_addr': 0x52, 'chip_id': 0x00, 'chip_value': 0x00},
-    17: {'name': 'ENS160 MOX Gas Sensor', 'short': 'ENS160-0x53', 'func': sensor_ens160, 'class_ref': adafruit_ens160.ENS160, 'arrgh': {'address': 0x53}, 'i2c_addr': 0x53, 'chip_id': 0x00, 'chip_value': 0x00}, #Has Part ID at 0x00
-    18: {'name': 'SHT4X Temperature & Humidity Sensor', 'short': 'SHT4X', 'func': sensor_sht4x, 'class_ref': adafruit_sht4x.SHT4x, 'arrgh': {}, 'i2c_addr': 0x44, 'chip_id': 0x00, 'chip_value': 0x00}
+    9: {'name': 'BME280 Humidity + Barometric Pressure + Temperature', 'short': 'BME280-0x77', 'func': sensor_bme280, 'class_ref': adafruit_bme280.Adafruit_BME280_I2C,'arrgh': {'address': 0x77},  'i2c_addr': 0x77, 'chip_id': 0xd0, 'chip_value': 0x60},
+    10: {'name': 'BMP280 Barometric Pressure + Temperature', 'short': 'BMP280-0x76', 'func': sensor_bmp280, 'class_ref': adafruit_bmp280.Adafruit_BMP280_I2C, 'arrgh': {'address': 0x76}, 'i2c_addr': 0x76, 'chip_id': 0xd0, 'chip_value': 0x58},
+    11: {'name': 'BMP280 Barometric Pressure + Temperature', 'short': 'BMP280-0x77', 'func': sensor_bmp280, 'class_ref': adafruit_bmp280.Adafruit_BMP280_I2C, 'arrgh': {'address': 0x77}, 'i2c_addr': 0x77, 'chip_id': 0xd0, 'chip_value': 0x58},
+    12: {'name': 'MS8607 Pressure, Temperature, and Humidity', 'short': 'MS8607', 'func': sensor_ms8607, 'class_ref': MS8607, 'arrgh': {}, 'i2c_addr': 0x76, 'chip_id': 0x00, 'chip_value': 0x08}, # also uses 0x40
+    13: {'name': 'HTU21D-F Temperature & Humidity', 'short': 'HTU21D', 'func': sensor_htu21d, 'class_ref': HTU21D, 'arrgh': {}, 'i2c_addr': 0x40, 'chip_id': 0x00, 'chip_value': 0x00},
+    14: {'name': 'LTR390 UV', 'short': 'LTR390', 'func': sensor_ltr390, 'class_ref': adafruit_ltr390.LTR390, 'arrgh': {}, 'i2c_addr': 0x53, 'chip_id': 0x06, 'chip_value': 0xb2}, # need to confirm ID
+    15: {'name': 'AHT20 Temperature & Humidity', 'short': 'AHT20', 'func': sensor_aht20, 'class_ref': adafruit_ahtx0.AHTx0, 'arrgh': {}, 'i2c_addr': 0x38, 'chip_id': 0x00, 'chip_value': 0x00},
+    16: {'name': 'MPRLS Ported Pressure', 'short': 'MPRLS', 'func': sensor_mprls, 'class_ref': adafruit_mprls.MPRLS, 'arrgh': {'psi_min': 0, 'psi_max':25}, 'i2c_addr': 0x18, 'chip_id': 0x00, 'chip_value': 0x00},
+    17: {'name': 'TSL2591 High Dynamic Range Digital Light Sensor', 'short': 'TSL2591', 'func': sensor_tsl2591, 'class_ref': adafruit_tsl2591.TSL2591, 'arrgh': {}, 'i2c_addr': 0x29, 'chip_id': 0x00, 'chip_value': 0x00}, # Also uses 0x28
+    18: {'name': 'SGP40 VOC Index', 'short': 'SGP40', 'func': sensor_sgp40, 'class_ref': adafruit_sgp40.SGP40, 'arrgh': {}, 'i2c_addr': 0x59, 'chip_id': 0x00, 'chip_value': 0x00},
+    19: {'name': 'ENS160 MOX Gas Sensor', 'short': 'ENS160-0x52', 'func': sensor_ens160, 'class_ref': adafruit_ens160.ENS160, 'arrgh': {'address': 0x52}, 'i2c_addr': 0x52, 'chip_id': 0x00, 'chip_value': 0x00},
+    20: {'name': 'ENS160 MOX Gas Sensor', 'short': 'ENS160-0x53', 'func': sensor_ens160, 'class_ref': adafruit_ens160.ENS160, 'arrgh': {'address': 0x53}, 'i2c_addr': 0x53, 'chip_id': 0x00, 'chip_value': 0x00}, #Has Part ID at 0x00
+    21: {'name': 'SHT4X Temperature & Humidity Sensor', 'short': 'SHT4X', 'func': sensor_sht4x, 'class_ref': adafruit_sht4x.SHT4x, 'arrgh': {}, 'i2c_addr': 0x44, 'chip_id': 0x00, 'chip_value': 0x00}
 }
 # List of all sensors in same order as dict, with None for sensors not found
 sensor_list = []
